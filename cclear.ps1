@@ -18,7 +18,33 @@ function FindEaSims3In($base) {
     return $targetItem
 }
 
+function FindCleanableFiles {
+    param (
+        $root,
+        $ext,
+        [array]$names
+    )
+    $allFiles = Get-ChildItem -Path $root -Filter *.$ext -File
+    Write-Host "`$allFiles = $allFiles"
+    $allFiles.where({ $names.Contains($_.Name) })
+}
+
+function FindCacheFiles {
+    param ( $root )
+    $cacheFilter = @{
+        root = $root.FullName;
+        ext = "package";
+        names = @( "CASPartCache.package", "compositorCache.package",
+            "scriptCache.package", "simCompositorCache.package",
+            "socialCache.package" )
+    }
+    FindCleanableFiles @cacheFilter
+}
+
 $sims3dir = FindEaSims3In .
 Write-Host "Found $($sims3dir.FullName)"
+
+$a = FindCacheFiles $sims3dir
+Write-Host "Found files: $a"
 
 read-host 'Press ENTER to continue...'  # aka Pause
