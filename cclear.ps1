@@ -5,7 +5,8 @@
 function FindEaSims3In($base) {
     $targetItem = Get-Item ($base)
     Write-Host "Examining $targetItem"
-    while ($targetItem.Name -ne "The Sims 3" -and $targetItem.FullName -ne $targetItem.Root) {
+    while ($targetItem.Name -ne "The Sims 3" `
+            -and $targetItem.FullName -ne $targetItem.Root) {
         $targetItem = $targetItem.Parent
         Write-Host "Examining $($targetItem.FullName)"
     }
