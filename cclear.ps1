@@ -1,14 +1,10 @@
-# Param( [string]$savePath, [switch]$once )
-
-# $base = (get-item $savePath)
+# Clean up caches, dumps, etc., before starting The Sims 3
 
 function FindEaSims3In($base) {
     $targetItem = Get-Item ($base)
-    Write-Host "Examining $targetItem"
     while ($targetItem.Name -ne "The Sims 3" `
             -and $targetItem.FullName -ne $targetItem.Root) {
         $targetItem = $targetItem.Parent
-        Write-Host "Examining $($targetItem.FullName)"
     }
     if ($targetItem.FullName -eq $targetItem.Root) {
         Write-Host "Could not find 'The Sims 3' in $base"
@@ -18,14 +14,36 @@ function FindEaSims3In($base) {
     return $targetItem
 }
 
+function FindSubdir {
+    param ( $root, $name )
+    $subDirs = @{
+        Path = $root.FullName;
+        Directory = $true
+    }
+    $subDirs = (Get-ChildItem @subDirs)
+    $mySubdirs = $subDirs.where({$_.Name -eq $name})
+    if ($mySubdirs) {
+        return $mySubdirs[0]
+    } else {
+        return ""
+    }
+}
+
+function FindFilesByFilter {
+    param (
+        $root,
+        $filter
+    )
+    Get-ChildItem -Path $root -Filter $filter -File
+}
+
 function FindCleanableFiles {
     param (
         $root,
         $ext,
         [array]$names
     )
-    $allFiles = Get-ChildItem -Path $root -Filter *.$ext -File
-    Write-Host "`$allFiles = $allFiles"
+    $allFiles = FindFilesByFilter $root "*.$ext"
     $allFiles.where({ $names.Contains($_.Name) })
 }
 
@@ -43,16 +61,11 @@ function FindCacheFiles {
 
 function FindThumbnails {
     param ( $root )
-    $subDirs = @{
-        Path = $root.FullName;
-        Directory = $true
-    }
-    $thumbsDirs = (Get-ChildItem @subDirs).where({$_.Name -eq "Thumbnails"})
+    $thumbsDir = FindSubdir $root Thumbnails
     $thumbnails = @()
-    if ($thumbsDirs) {
-        Write-Host "Thumbnails dir: $($thumbsDir.FullName)"
+    if ($thumbsDir) {
         $filter = @{
-            root = $thumbsDirs[0].FullName;
+            root = $thumbsDir.FullName;
             ext = "package";
             names = @("CASThumbnails.package", "ObjectThumbnails.package")
         }
@@ -61,12 +74,34 @@ function FindThumbnails {
     return $thumbnails
 }
 
+function FindDCBackups {
+    param ( $root )
+    $dcbDir = FindSubdir $root DCBackup
+    $backups = @()
+    if ($dcbDir) {
+        $filter = @{
+            root = $dcbDir.FullName;
+            filter = "0x*.package"
+        }
+        $backups = FindFilesByFilter @filter
+    }
+    return $backups
+}
+
 $sims3dir = FindEaSims3In .
 Write-Host "Found $($sims3dir.FullName)"
 
 $a = FindCacheFiles $sims3dir
-Write-Host "Found files: $a"
+Write-Host "Found caches: $a"
 $b = FindThumbnails $sims3dir
 Write-Host "Found thumbnails: $b"
+$c = FindDCBackups $sims3dir
+Write-Host "Found backups: $c"
+
+$cleanable = $a + $b + $c
+Write-Host "Files to clean:"
+foreach ($f in $cleanable) {
+    Write-Host $f.FullName
+}
 
 read-host 'Press ENTER to continue...'  # aka Pause
