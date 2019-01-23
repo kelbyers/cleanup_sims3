@@ -2,19 +2,22 @@
 
 # $base = (get-item $savePath)
 
-$base = Get-Location
-$targetItem = Get-Item ($base)
-Write-Host "Examining " + $targetItem
-while ($targetItem.Name -ne "The Sims 3" -and $targetItem.FullName -ne $targetItem.Root) {
-    $targetItem = $targetItem.Parent
-    Write-Host "Examining " + $targetItem
-}
-if ($targetItem.FullName -eq $targetItem.Root) {
-    Write-Host "Could not find 'The Sims 3' in " + $base
-    Start-Sleep -Seconds 7
-    Exit
+function FindEaSims3In($base) {
+    $targetItem = Get-Item ($base)
+    Write-Host "Examining $targetItem"
+    while ($targetItem.Name -ne "The Sims 3" -and $targetItem.FullName -ne $targetItem.Root) {
+        $targetItem = $targetItem.Parent
+        Write-Host "Examining $($targetItem.FullName)"
+    }
+    if ($targetItem.FullName -eq $targetItem.Root) {
+        Write-Host "Could not find 'The Sims 3' in $base"
+        read-host 'Press ENTER to continue...'  # aka Pause
+        Exit
+    }
+    return $targetItem
 }
 
-Write-Host "Found " + $targetItem.FullName
+$sims3dir = FindEaSims3In .
+Write-Host "Found $($sims3dir.FullName)"
 
 read-host 'Press ENTER to continue...'  # aka Pause
